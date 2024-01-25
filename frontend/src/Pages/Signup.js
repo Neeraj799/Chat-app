@@ -1,13 +1,18 @@
 import React, { useState } from 'react'
 import '../CSS/Signup.css';
 import { Link } from "react-router-dom"
+import { useToast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 
 const Signup = () => {
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
+    const [username, setUsername] = useState();
+    const [email, setEmail] = useState();
+    const [password, setPassword] = useState();
+    const [confirmPassword, setConfirmPassword] = useState();
+    const toast = useToast();
+    const history = useHistory();
 
     const handleUsername = (e) => {
         setUsername(e.target.value);
@@ -25,24 +30,64 @@ const Signup = () => {
         setConfirmPassword(e.target.value);
     }
 
-    const handleSubmit = (e) => {
-        if (password != confirmPassword) {
-            setError("Password do not match");
+    const handleSubmit = async () => {
+        if (!username || !password || !confirmPassword) {
+            toast({
+                title: "Please fill all the fields",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+                position: "bottom",
+            });
             return;
         }
 
-        setError("");
+        if (password !== confirmPassword) {
+            toast({
+                title: "Passwords do not match",
+                status: "warning",
+                duration: 5000,
+                isClosable: true,
+                position: "bottom",
+            });
+            return;
+        }
 
+        try {
+            const config = {
+                headers: {
+                    "Content-type": "application/json",
+                },
+            };
 
+            const { data } = await axios.post(
+                "/api/user",
+                { username, email, password },
+                config
+            );
 
+            toast({
+                title: "Registraion Successful",
+                status: "success",
+                duration: 5000,
+                isClosable: true,
+                position: "bottom",
+            });
 
+            localStorage.setItem("userInfo", JSON.stringify(data));
+            history.push('/chats');
+        } catch (error) {
+            toast({
+                title: "Error Occured!",
+                description: error.response.data.message,
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+                position: "bottom",
+            });
+        }
 
-
-        console.log(username);
-        console.log(email);
-        console.log(password);
-        console.log(confirmPassword);
-    }
+    };
 
     return (
         <div className='loginsignup'>
@@ -58,7 +103,6 @@ const Signup = () => {
                     <h4>Confirm Password</h4>
                     <input type="password" placeholder='Confirm Password' value={confirmPassword} onChange={handleConfirmPasswordChange} />
                 </div>
-                {error && <p>{error}</p>}
                 <button onClick={handleSubmit}>Continue</button>
                 <p className="loginsignup-login">Already have a account? <Link to="/">Login here</Link></p>
 

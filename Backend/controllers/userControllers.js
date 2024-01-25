@@ -2,10 +2,10 @@ const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
 const generateToken = require("../config/generateToken");
 
-const registerUser = asyncHandler(async (req, res, next) => {
-    const { name, email, password, image_url } = req.body;
+const registerUser = asyncHandler(async (req, res) => {
+    const { username, email, password, image_url } = req.body;
     console.log(req.body)
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
         res.status(400);
         throw new Error("Please enter all the fields");
     }
@@ -14,12 +14,12 @@ const registerUser = asyncHandler(async (req, res, next) => {
 
     if (userExists) {
         res.status(400);
-        return next(new Error("Email already exists"));
+        throw new Error("Email already exists");
     }
 
 
     const user = await User.create({
-        name,
+        username,
         email,
         password,
         image_url,
@@ -29,7 +29,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     if (user) {
         res.status(201).json({
             _id: user._id,
-            name: user.name,
+            username: user.username,
             email: user.email,
             image_url: user.image_url,
             token: generateToken(user._id),
@@ -45,10 +45,10 @@ const authUser = asyncHandler(async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (user) {
+    if (user && (await user.matchPassword(password))) {
         res.json({
             _id: user._id,
-            name: user.name,
+            username: user.username,
             email: user.email,
             image_url: user.image_url,
             token: generateToken(user._id),
@@ -60,4 +60,4 @@ const authUser = asyncHandler(async (req, res) => {
 
 })
 
-module.exports = { registerUser };
+module.exports = { registerUser, authUser };
